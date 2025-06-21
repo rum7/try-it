@@ -1,9 +1,7 @@
 import { getLinks } from "@/app/actions/actions"
-
-import { locales } from "@/lib/i18n"
-
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { Locale } from "@/lib/i18n"
 
 import { FormLinksAdd } from "@/components/form-links/form-links-add"
 import {
@@ -17,7 +15,6 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Icons } from "@/components/ui/icons-list"
-import { Value } from "@radix-ui/react-select"
 
 type Datalinks = {
     tags: string[],
@@ -121,31 +118,30 @@ const tagList = [
     },
 ]
 
-
-type FetchLink = {
-    tags: { value: string, label: string }[],
-    name: string,
-    address: string[],
-    website: string,
-    socials: { [key: string]: string, links: string }
+const tableLabels = {
+    tags: { fr : "Catégories", en: "Tags"},
+    name: { fr : "Nom", en: "Name"},
+    address: { fr : "Adresse", en: "Address"},
+    website: { fr : "Site web", en: "Website"},
+    socials: { fr : "Réseaux sociaux", en: "Socials"},
 }
 
 type Props = {
-    params: {
-        locale: string
-    }
+    params: Promise<{locale: Locale}>
 }
 
-// export function generateStaticParams() {
-//     return locales.map(locale => ({ locale }))
-// }
+type FetchLink = {
+    tags: { value: string, label: { [key: string]: string } }[],
+    name: string,
+    addresses: string[],
+    website: string,
+    socials: { network: string, link: string }[]
+}
 
 export default async function page({ params }: Props) {
-    // const locale = params.locale
-    // console.log('locale: ', locale)
-
-    const fetchLinks = await getLinks()
-    // console.log('fetchLinks: ', fetchLinks)
+    const { locale } = await params
+    const fetchLinks: FetchLink[] = await getLinks()
+    console.log('fetchLinks: ', fetchLinks)
 
     return (
         <>
@@ -154,14 +150,49 @@ export default async function page({ params }: Props) {
                     <TableCaption className="italic">You should give it a try, really...</TableCaption>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[200px]">Tags</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Address</TableHead>
-                            <TableHead>Website</TableHead>
-                            <TableHead>Socials</TableHead>
+                            <TableHead className="w-[200px]">{tableLabels.tags[locale]}</TableHead>
+                            <TableHead>{tableLabels.name[locale]}</TableHead>
+                            <TableHead>{tableLabels.address[locale]}</TableHead>
+                            <TableHead>{tableLabels.website[locale]}</TableHead>
+                            <TableHead>{tableLabels.socials[locale]}</TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody>                        
+                        {fetchLinks.map((fetchLink, index) => (
+                            <TableRow key={`${fetchLink.name}-${index}`}>
+                                <TableCell className="font-medium">
+                                    <ul className="flex flex-wrap gap-2">
+                                        {fetchLink.tags.map((tag, index) => (
+                                            <li
+                                                key={index}
+                                                className={cn("flex size-5 w-fit p-1 items-center justify-center rounded text-xs font-medium bg-indigo-400/20 text-indigo-500", )}
+                                            >
+                                                {tag.label[locale]}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </TableCell>
+                                <TableCell>{fetchLink.name}</TableCell>
+                                <TableCell>
+                                    <ul className="flex flex-col gap-2">
+                                        {fetchLink.addresses.map((address, index) => (
+                                            <li key={`${address}-${index}`}>{address}</li>
+                                        ))}
+                                    </ul>
+                                </TableCell>
+                                <TableCell>
+                                    <Link href={fetchLink.website} target="_blank">{fetchLink.website}</Link>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex gap-2">
+                                        {fetchLink.socials.map((social, index) => {                                        
+                                            const IconComponent = Icons[social.network as keyof typeof Icons]
+                                            if (IconComponent) return <Link key={`${social.network}-${index}`} href={social.link} target="_blank"><IconComponent className="size-6" /></Link>
+                                        })}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
                         {/* {datalinks.map((datalink, index) => (
                             <TableRow key={`${datalink.name}-${index}`}>
                                 <TableCell className="font-medium">
@@ -197,41 +228,6 @@ export default async function page({ params }: Props) {
                                 </TableCell>
                             </TableRow>
                         ))} */}
-                        {datalinks.map((datalink, index) => (
-                            <TableRow key={`${datalink.name}-${index}`}>
-                                <TableCell className="font-medium">
-                                    <ul className="flex flex-wrap gap-2">
-                                        {datalink.tags.map((cat, index) => (
-                                            <li
-                                                key={index}
-                                                className={cn("flex size-5 w-fit p-1 items-center justify-center rounded text-xs font-medium bg-indigo-400/20 text-indigo-500", )}
-                                            >
-                                                {cat}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </TableCell>
-                                <TableCell>{datalink.name}</TableCell>
-                                <TableCell>
-                                    <ul className="flex flex-col gap-2">
-                                        {datalink.address.map((address, index) => (
-                                            <li key={index}> {address}</li>
-                                        ))}
-                                    </ul>
-                                </TableCell>
-                                <TableCell>
-                                    <Link href={datalink.website} target="_blank">{datalink.website}</Link>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex gap-2">
-                                        {Object.entries(datalink.socials).map(([key, url]) => {                                        
-                                            const IconComponent = Icons[key as keyof typeof Icons]
-                                            if (IconComponent) return <Link key={key} href={url} target="_blank"><IconComponent className="size-6" /></Link>
-                                        })}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
                     </TableBody>
                     {/* <TableFooter>
                         <TableRow className="italic">
