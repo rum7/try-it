@@ -1,7 +1,5 @@
 {
-  "build": {
-    "env": {
-      "NEXT_IGNORE_ESLINT_WARNINGS": "true"
-    }
+  "eslint": {
+    "ignoreDuringBuilds": true
   }
 }
